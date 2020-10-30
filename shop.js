@@ -34,34 +34,34 @@ var StockString = "Tables-15,Chairs-15,Beds-8";
  * Hint: mergeOrders is needed later in the test, you can skip implementing it at first.
  */
 function Order(orderString) {
-  if (orderString === "" || typeof orderString !== "string") return;
+  if (typeof orderString !== "string") return;
 
-  const arrayOfFurnitures = orderString.split(",");
-  const orderObject = {};
+  const furnitures = orderString.split(",");
 
-  for (let furniture of arrayOfFurnitures) {
-    let arr = furniture.split("-");
-    orderObject[arr[0]] = Number([arr[1]]);
-  }
-
-  for (let key in orderObject) {
-    this[key] = orderObject[key];
+  if (furnitures.length > 1) {
+    for (let furniture of furnitures) {
+      let parts = furniture.split("-");
+      this[parts[0]] = Number([parts[1]]);
+    }
   }
 }
 
-Order.prototype.addFurniture = function(furniture, count) {
-  this[furniture] = count;
+Order.prototype.addFurniture = function (furniture, count) {
+  if (typeof count != "number" || count < 1)
+    throw new Exception("INVALID FURNITURE QUANTITY");
+
+  this[furniture] = this.hasOwnProperty(furniture)
+    ? this[furniture] + count
+    : count;
 };
 
-Order.prototype.mergeOrders = function(otherOrder) {
+Order.prototype.mergeOrders = function (otherOrder) {
   for (let key in otherOrder) {
     if (this.hasOwnProperty(key)) this[key] += otherOrder[key];
     else if (otherOrder.hasOwnProperty(key)) this[key] = otherOrder[key];
   }
 };
 
-const order = new Order("Tables-5,Chairs-3,Beds-2");
-const otherOrder = new Order("Tables-1,Chairs-1,Beds-1");
 
 /* Create a Stock object, which has:
  * 1. the constructor, which parses a stock string representation into pairs of (Furniture (String) - Quantity (Number)) 
@@ -77,14 +77,14 @@ function Stock(stockString) {
   }
 }
 
-Stock.prototype.hasEnoughFurniture = function(order) {
+Stock.prototype.hasEnoughFurniture = function (order) {
   for (let key of Object.keys(order)) {
     if (!this.hasOwnProperty(key) || this[key] < order[key]) return false;
   }
   return true;
 };
 
-Stock.prototype.deliverFurniture = function(order) {
+Stock.prototype.deliverFurniture = function (order) {
   if (!this.hasEnoughFurniture(order))
     return "Insufficient furniture in stock to cover the order";
 
@@ -104,41 +104,32 @@ const stock = new Stock(StockString);
  */
 function FurnitureShop() {}
 
-FurnitureShop.prototype.ordersStringToOrdersArray = function(ordersString) {
+FurnitureShop.prototype.ordersStringToOrdersArray = function (ordersString) {
   const ordersArray = ordersString.split(";");
-  const orders = [];
+  this.orders = [];
 
-  for (let order of ordersArray) {
-    let orderObj = new Order(order);
-    orders.push(orderObj);
-  }
-
-  this.orders = orders;
+  for (let order of ordersArray)
+    this.orders.push(new Order(order));
 };
 
-FurnitureShop.prototype.stockStringToStock = function(stockString) {
-  const stock = new Stock(stockString);
-  this.stock = stock;
+FurnitureShop.prototype.stockStringToStock = function (stockString) {
+  this.stock = new Stock(stockString);
 };
 
-FurnitureShop.prototype.processOrders = function(ordersArray, stock) {
-  const remainingOrders = [];
+FurnitureShop.prototype.processOrders = function (ordersArray, stock) {
+  this.remainingOrders = [];
   for (let order of ordersArray) {
     if (stock.hasEnoughFurniture(order)) stock.deliverFurniture(order);
-    else remainingOrders.push(order);
+    else this.remainingOrders.push(order);
   }
-  this.remainingOrders = remainingOrders;
 };
 
-FurnitureShop.prototype.mergeRemainingOrdersIntoRequiredStock = function(
+FurnitureShop.prototype.mergeRemainingOrdersIntoRequiredStock = function (
   remainingOrders
 ) {
-  const requiredStock = new Order("");
-  for (let order of remainingOrders) {
-    requiredStock.mergeOrders(order);
-  }
-
-  this.requiredStock = requiredStock;
+  this.requiredStock = new Order("");
+  for (let order of remainingOrders)
+    this.requiredStock.mergeOrders(order);
 };
 
 var shop = new FurnitureShop();
